@@ -1,0 +1,43 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+EXEC SQL INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+sqlint32 hId;
+char hOznaka[51];
+char hNaziv[51];
+sqlint32 hEspb;
+EXEC SQL END DECLARE SECTION;
+
+
+void checkError(const char *str){
+    if(SQLCODE < 0){
+        fprintf(stderr, "Greska %d: %s\n", SQLCODE, str);
+        EXEC SQL CONNECT RESET;
+        exit(EXIT_FAILURE);
+    }
+}
+
+int main(){
+    EXEC SQL CONNECT TO stud2020 USER student USING abcdef;
+    checkError("Konektovanje!");
+
+    EXEC SQL 
+    SELECT ID,
+           OZNAKA,
+           NAZIV,
+           ESPB
+    INTO :hId,
+         :hOznaka,
+         :hNaziv,
+         :hEspb
+    FROM DA.PREDMET
+    WHERE ID = 1693;
+    checkError("Glavni deo zadatka!");
+
+    printf("Idpredmeta %d\nOznaka predmeta %s\nNaziv predmeta %s\nBroj epsb %d\n",hId,hOznaka,hNaziv,hEspb);
+    EXEC SQL CONNECT RESET;
+    checkError("Diskonekcija!");
+    return 0;
+}

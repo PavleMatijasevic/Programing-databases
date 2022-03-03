@@ -1,0 +1,106 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+EXEC SQL INCLUDE SQLCA;
+
+EXEC SQL BEGIN DECLARE SECTION;
+sqlint32 hIdPredmeta;
+char hOznakaPredmeta[21];
+char hNazivPredmeta[151];
+sqlint32 hBrojBodova;
+EXEC SQL END DECLARE SECTION;
+
+void insertNewCourse();
+void updateNewCourse();
+void deleteNewCourse();
+void stampajPodatke();
+
+void checkError(const char *str){
+    if(SQLCODE < 0){
+        fprintf(stderr, "Greska %d:%s\n",SQLCODE, str);
+        EXEC SQL CONNECT RESET;
+        exit(EXIT_FAILURE);
+    }
+}
+
+void insertNewCourse(){
+    printf("Uneti identifikator predmeta: ");
+    scanf("%d",&hIdPredmeta);
+
+    printf("Uneti oznaku predmeta: ");
+    scanf("%s", hOznakaPredmeta);
+    getchar();
+
+    printf("Uneti naziv predmeta: ");
+    fgets(hNazivPredmeta,sizeof(hNazivPredmeta),stdin);
+    hNazivPredmeta[strcspn(hNazivPredmeta,"\n")] = '\0';
+
+    printf("Predmet nosi koliko espb bodova: ");
+    scanf("%d", &hBrojBodova);
+
+    printf("Unosim podatke u bazu >>>>>>");
+    EXEC SQL 
+        INSERT INTO DA.PREDMET 
+        VALUES (:hIdPredmeta, :hOznakaPredmeta, :hNazivPredmeta, :hBrojBodova);
+        checkError("Unos podataka u bazu!");
+
+    printf("Podaci uspesno uneti  <<<<<<");
+    stampajPodatke();
+
+
+}
+void updateNewCourse(){
+    printf("Menjam podatke o predmetu >>>>>");
+    EXEC SQL 
+    UPDATE DA.PREDMET
+    SET ESPB = ESPB * 2
+    WHERE ID = :hIdPredmeta;
+    checkError("Azuriranje baze!");
+
+    printf("Podaci uspesno azurirani <<<<<<<");
+    stampajPodatke();
+}
+void deleteNewCourse(){
+    printf("Brisemo predmet iz baze >>>>>>");
+
+    EXEC SQL 
+    DELETE FROM DA.PREDMET
+    WHERE ID = :hIdPredmeta;
+    checkError("Brisanje predmeta!");
+
+    printf("Predmet uspesno obrisan!");
+}
+void stampajPodatke(){
+    EXEC SQL 
+    SELECT ID,
+           OZNAKA,
+           NAZIV,
+           ESPB,
+    INTO   :hIdPredmeta,
+           :hOznakaPredmeta,
+           :hNazivPredmeta,
+           :hBrojBodova
+    FROM DA.PREDMET
+    WHERE ID = :hIdPredmeta;
+    checkError("Stampanje podataka");
+
+    printf("Identifikator predmeta: %d\n", hIdPredmeta);
+    printf("Oznaka predmeta: %s\n", hOznakaPredmeta);
+    printf("Naziv predmeta: %s\n", hNazivPredmeta);
+    printf("Broj bodova predmeta: %d\n", hBrojBodova);
+
+}   
+
+int main(){
+    EXEC SQL CONNECT TO stud2020 USER student USING abcdef;
+    checkError("Konektovanje!");
+
+    insertNewCourse();
+    updateNewCourse();
+    deleteNewCourse();
+
+    EXEC SQL CONNECT RESET;
+    checkError("Diskonekcija!");
+    return 0;
+}
